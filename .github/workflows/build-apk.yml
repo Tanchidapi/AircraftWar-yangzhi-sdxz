@@ -11,6 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: AircraftWarAndroid
 
     steps:
     # 1. 检出代码
@@ -24,31 +27,25 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # 3. 设置 Gradle
+    # 3. 设置 Gradle（指定版本 8.0，与 AGP 8.1.0 兼容）
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.0'
 
-    # 4. 进入Android项目目录
-    - name: Change to Android project directory
-      run: cd AircraftWarAndroid
-
-    # 5. 生成 Gradle Wrapper
+    # 4. 生成 Gradle Wrapper（使用指定版本的 Gradle）
     - name: Generate Gradle Wrapper
-      run: |
-        cd AircraftWarAndroid
-        if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-          gradle wrapper --gradle-version 8.0
-        fi
+      run: gradle wrapper --gradle-version 8.0
 
-    # 6. 赋予 gradlew 执行权限
+    # 5. 赋予 gradlew 执行权限
     - name: Grant execute permission for gradlew
-      run: cd AircraftWarAndroid && chmod +x gradlew
+      run: chmod +x gradlew
 
-    # 7. 构建 Debug APK
+    # 6. 构建 Debug APK
     - name: Build Debug APK
-      run: cd AircraftWarAndroid && ./gradlew assembleDebug --stacktrace
+      run: ./gradlew assembleDebug --stacktrace
 
-    # 8. 上传 Debug APK 产物
+    # 7. 上传 Debug APK 产物
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
@@ -56,11 +53,11 @@ jobs:
         path: AircraftWarAndroid/app/build/outputs/apk/debug/*.apk
         retention-days: 30
 
-    # 9. 构建 Release APK
+    # 8. 构建 Release APK
     - name: Build Release APK
-      run: cd AircraftWarAndroid && ./gradlew assembleRelease --stacktrace
+      run: ./gradlew assembleRelease --stacktrace
 
-    # 10. 上传 Release APK 产物
+    # 9. 上传 Release APK 产物
     - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:

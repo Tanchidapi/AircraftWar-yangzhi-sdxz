@@ -16,7 +16,18 @@
         android:textColor="#e94560"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:layout_marginBottom="10dp" />
+        android:layout_marginBottom="4dp" />
+
+    <!-- 服务器连接状态 -->
+    <TextView
+        android:id="@+id/tv_server_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="🔄 检测服务器..."
+        android:textColor="#AAAAAA"
+        android:textSize="12sp"
+        android:layout_marginBottom="8dp" />
 
     <!-- 难度选择 -->
     <Spinner

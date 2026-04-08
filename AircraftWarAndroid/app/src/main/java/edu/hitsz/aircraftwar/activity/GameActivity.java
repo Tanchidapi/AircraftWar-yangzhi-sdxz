@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -95,7 +96,13 @@ public class GameActivity extends AppCompatActivity {
 
                     // 尝试提交到在线排行榜
                     OnlineRankingManager.getInstance().submitScore(newScore, success -> {
-                        // 无论成功与否都跳转到排行榜
+                        if (success) {
+                            Toast.makeText(GameActivity.this,
+                                    "✅ 分数已同步到在线排行榜", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(GameActivity.this,
+                                    "⚠ 在线同步失败，分数已保存到本地", Toast.LENGTH_SHORT).show();
+                        }
                     });
 
                     // 跳转到排行榜

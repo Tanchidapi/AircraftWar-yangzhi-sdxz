@@ -5,6 +5,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,6 +37,7 @@ public class RankingActivity extends AppCompatActivity {
     private Spinner spinnerDifficulty;
     private Button btnDelete, btnBack, btnOnline;
     private TextView tvTitle;
+    private TextView tvServerStatus;
 
     private ScoreDao scoreDao;
     private List<Score> scoreList = new ArrayList<>();
@@ -52,6 +55,7 @@ public class RankingActivity extends AppCompatActivity {
         if (currentDifficulty == null) currentDifficulty = "EASY";
 
         tvTitle = findViewById(R.id.tv_ranking_title);
+        tvServerStatus = findViewById(R.id.tv_server_status);
         recyclerView = findViewById(R.id.recycler_ranking);
         spinnerDifficulty = findViewById(R.id.spinner_difficulty);
         btnDelete = findViewById(R.id.btn_delete);
@@ -101,7 +105,87 @@ public class RankingActivity extends AppCompatActivity {
         // 在线排行榜按钮
         btnOnline.setOnClickListener(v -> loadOnlineRanking());
 
+        // 长按在线排行榜按钮 -> 配置服务器地址
+        btnOnline.setOnLongClickListener(v -> {
+            showServerConfigDialog();
+            return true;
+        });
+
         loadScores();
+        checkServerStatus();
+    }
+
+    /**
+     * 检查服务器连接状态
+     */
+    private void checkServerStatus() {
+        if (tvServerStatus == null) return;
+        tvServerStatus.setText("🔄 检测服务器...");
+        tvServerStatus.setTextColor(0xFFAAAAAA);
+
+        OnlineRankingManager.getInstance().checkServerHealth(healthy -> {
+            if (healthy) {
+                tvServerStatus.setText("🟢 服务器已连接 (" +
+                        OnlineRankingManager.getInstance().getServerUrl() + ")");
+                tvServerStatus.setTextColor(0xFF4CAF50);
+            } else {
+                tvServerStatus.setText("🔴 服务器未连接（长按「在线排行」配置地址）");
+                tvServerStatus.setTextColor(0xFFe94560);
+            }
+        });
+    }
+
+    /**
+     * 显示服务器地址配置对话框
+     */
+    private void showServerConfigDialog() {
+        EditText inputHost = new EditText(this);
+        inputHost.setHint("服务器IP（如 10.0.2.2 或 192.168.x.x）");
+        inputHost.setText("10.0.2.2");
+
+        EditText inputPort = new EditText(this);
+        inputPort.setHint("端口号（默认 5000）");
+        inputPort.setText("5000");
+        inputPort.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 30, 50, 10);
+
+        TextView tipText = new TextView(this);
+        tipText.setText("提示：\n• Android模拟器访问宿主机请用 10.0.2.2\n• 真机请使用电脑的局域网IP");
+        tipText.setTextSize(13);
+        tipText.setPadding(0, 0, 0, 20);
+        layout.addView(tipText);
+
+        TextView hostLabel = new TextView(this);
+        hostLabel.setText("服务器地址：");
+        layout.addView(hostLabel);
+        layout.addView(inputHost);
+
+        TextView portLabel = new TextView(this);
+        portLabel.setText("端口号：");
+        portLabel.setPadding(0, 20, 0, 0);
+        layout.addView(portLabel);
+        layout.addView(inputPort);
+
+        new AlertDialog.Builder(this)
+                .setTitle("配置排行榜服务器")
+                .setView(layout)
+                .setPositiveButton("连接", (dialog, which) -> {
+                    String host = inputHost.getText().toString().trim();
+                    int port;
+                    try {
+                        port = Integer.parseInt(inputPort.getText().toString().trim());
+                    } catch (NumberFormatException e) {
+                        port = 5000;
+                    }
+                    OnlineRankingManager.setServerAddress(host, port);
+                    Toast.makeText(this, "已更新服务器地址: " + host + ":" + port, Toast.LENGTH_SHORT).show();
+                    checkServerStatus();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void loadScores() {
@@ -120,9 +204,10 @@ public class RankingActivity extends AppCompatActivity {
                 scoreList.addAll(scores);
                 adapter.notifyDataSetChanged();
                 tvTitle.setText("🌐 在线排行榜 - " + getDifficultyName(currentDifficulty));
-                Toast.makeText(this, "已加载在线排行榜", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "已加载在线排行榜（" + scores.size() + "条记录）",
+                        Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "暂无在线数据，显示本地排行", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "服务器无数据或连接失败，显示本地排行", Toast.LENGTH_SHORT).show();
                 loadScores();
             }
         });

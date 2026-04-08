@@ -10,8 +10,6 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -20,24 +18,29 @@ import okhttp3.*;
 
 /**
  * 在线排行榜网络管理器（使用OkHttp）
- * 功能一：在线排行榜（HTTP/OkHttp 实现）
- * 当服务器不可用时，自动回退到模拟在线排行榜（使用本地数据模拟）
+ * 连接本地 Flask 排行榜服务器
+ *
+ * 服务器地址说明：
+ *   - Android 模拟器访问宿主机: 10.0.2.2
+ *   - 真机同一局域网: 使用电脑的局域网IP（如 192.168.x.x）
+ *   - 服务器端口: 5000
  */
 public class OnlineRankingManager {
 
     private static final String TAG = "OnlineRanking";
-    // 服务器API地址（可替换为实际服务器地址）
-    private static final String BASE_URL = "https://aircraftwar-api.example.com/api";
-    private static final String SUBMIT_SCORE_URL = BASE_URL + "/scores";
-    private static final String GET_RANKING_URL = BASE_URL + "/ranking";
+
+    /**
+     * 服务器地址配置
+     * 模拟器使用 10.0.2.2 访问宿主机的 localhost
+     * 如果使用真机测试，请改为电脑的局域网IP地址
+     */
+    private static String serverHost = "10.0.2.2";
+    private static int serverPort = 5000;
 
     private static OnlineRankingManager instance;
     private OkHttpClient client;
     private Gson gson;
     private Handler mainHandler;
-
-    // 模拟在线排行榜数据（当服务器不可用时使用）
-    private final List<Score> simulatedOnlineScores = new ArrayList<>();
 
     private OnlineRankingManager() {
         client = new OkHttpClient.Builder()
@@ -47,30 +50,6 @@ public class OnlineRankingManager {
                 .build();
         gson = new Gson();
         mainHandler = new Handler(Looper.getMainLooper());
-        initSimulatedData();
-    }
-
-    /**
-     * 初始化模拟的在线排行榜数据
-     */
-    private void initSimulatedData() {
-        simulatedOnlineScores.add(new Score("AcePlayer", 2580, "2026-04-01 10:30:00", "EASY"));
-        simulatedOnlineScores.add(new Score("SkyKing", 1920, "2026-04-02 14:20:00", "EASY"));
-        simulatedOnlineScores.add(new Score("StarPilot", 1650, "2026-04-03 09:15:00", "EASY"));
-        simulatedOnlineScores.add(new Score("Phoenix", 1200, "2026-04-04 16:45:00", "EASY"));
-        simulatedOnlineScores.add(new Score("Thunder", 980, "2026-04-05 11:00:00", "EASY"));
-
-        simulatedOnlineScores.add(new Score("AcePlayer", 3200, "2026-04-01 11:00:00", "NORMAL"));
-        simulatedOnlineScores.add(new Score("DragonFly", 2800, "2026-04-02 15:30:00", "NORMAL"));
-        simulatedOnlineScores.add(new Score("SkyKing", 2100, "2026-04-03 10:00:00", "NORMAL"));
-        simulatedOnlineScores.add(new Score("IronWing", 1750, "2026-04-04 17:20:00", "NORMAL"));
-        simulatedOnlineScores.add(new Score("Blaze", 1400, "2026-04-05 12:10:00", "NORMAL"));
-
-        simulatedOnlineScores.add(new Score("AcePlayer", 4500, "2026-04-01 12:00:00", "HARD"));
-        simulatedOnlineScores.add(new Score("DragonFly", 3800, "2026-04-02 16:00:00", "HARD"));
-        simulatedOnlineScores.add(new Score("Viper", 3100, "2026-04-03 11:30:00", "HARD"));
-        simulatedOnlineScores.add(new Score("SkyKing", 2600, "2026-04-04 18:00:00", "HARD"));
-        simulatedOnlineScores.add(new Score("StormRider", 2000, "2026-04-05 13:00:00", "HARD"));
     }
 
     public static synchronized OnlineRankingManager getInstance() {
@@ -81,36 +60,79 @@ public class OnlineRankingManager {
     }
 
     /**
+     * 设置服务器地址（可在设置中动态修改）
+     * @param host 服务器IP地址
+     * @param port 服务器端口
+     */
+    public static void setServerAddress(String host, int port) {
+        serverHost = host;
+        serverPort = port;
+        // 重置实例以使用新地址
+        instance = null;
+    }
+
+    private String getBaseUrl() {
+        return "http://" + serverHost + ":" + serverPort + "/api";
+    }
+
+    /**
+     * 健康检查 - 测试服务器是否可用
+     */
+    public void checkServerHealth(OnResultCallback<Boolean> callback) {
+        Request request = new Request.Builder()
+                .url(getBaseUrl() + "/health")
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.w(TAG, "服务器不可用: " + e.getMessage());
+                mainHandler.post(() -> {
+                    if (callback != null) callback.onResult(false);
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                boolean healthy = response.isSuccessful();
+                Log.d(TAG, "服务器健康检查: " + (healthy ? "正常" : "异常"));
+                mainHandler.post(() -> {
+                    if (callback != null) callback.onResult(healthy);
+                });
+            }
+        });
+    }
+
+    /**
      * 提交分数到服务器
-     * 如果服务器不可用，将分数添加到模拟在线排行榜
      */
     public void submitScore(Score score, OnResultCallback<Boolean> callback) {
         String json = gson.toJson(score);
+        Log.d(TAG, "提交分数: " + json);
+
         RequestBody body = RequestBody.create(
                 MediaType.parse("application/json; charset=utf-8"), json);
 
         Request request = new Request.Builder()
-                .url(SUBMIT_SCORE_URL)
+                .url(getBaseUrl() + "/scores")
                 .post(body)
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Log.w(TAG, "服务器不可用，分数已保存到模拟在线排行榜");
-                // 服务器不可用时，添加到模拟数据
-                synchronized (simulatedOnlineScores) {
-                    simulatedOnlineScores.add(score);
-                }
+                Log.e(TAG, "提交分数失败（网络错误）: " + e.getMessage());
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onResult(true);
+                    if (callback != null) callback.onResult(false);
                 });
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 boolean success = response.isSuccessful();
-                Log.d(TAG, "提交分数结果: " + success);
+                String responseBody = response.body() != null ? response.body().string() : "";
+                Log.d(TAG, "提交分数结果: " + success + " - " + responseBody);
                 mainHandler.post(() -> {
                     if (callback != null) callback.onResult(success);
                 });
@@ -120,10 +142,10 @@ public class OnlineRankingManager {
 
     /**
      * 获取在线排行榜
-     * 如果服务器不可用，返回模拟的在线排行榜数据
      */
     public void getRanking(String difficulty, OnResultCallback<List<Score>> callback) {
-        String url = GET_RANKING_URL + "?difficulty=" + difficulty;
+        String url = getBaseUrl() + "/ranking?difficulty=" + difficulty;
+        Log.d(TAG, "请求排行榜: " + url);
 
         Request request = new Request.Builder()
                 .url(url)
@@ -133,11 +155,9 @@ public class OnlineRankingManager {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Log.w(TAG, "服务器不可用，使用模拟在线排行榜数据");
-                // 返回模拟数据
-                List<Score> filtered = getSimulatedRanking(difficulty);
+                Log.e(TAG, "获取排行榜失败（网络错误）: " + e.getMessage());
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onResult(filtered);
+                    if (callback != null) callback.onResult(new ArrayList<>());
                 });
             }
 
@@ -146,16 +166,14 @@ public class OnlineRankingManager {
                 List<Score> scores = new ArrayList<>();
                 if (response.isSuccessful() && response.body() != null) {
                     String responseBody = response.body().string();
+                    Log.d(TAG, "排行榜响应: " + responseBody);
                     try {
                         Type listType = new TypeToken<List<Score>>() {}.getType();
                         scores = gson.fromJson(responseBody, listType);
+                        if (scores == null) scores = new ArrayList<>();
                     } catch (Exception e) {
                         Log.e(TAG, "解析排行榜数据失败: " + e.getMessage());
                     }
-                }
-                // 如果服务器返回空数据，也使用模拟数据
-                if (scores == null || scores.isEmpty()) {
-                    scores = getSimulatedRanking(difficulty);
                 }
                 final List<Score> finalScores = scores;
                 mainHandler.post(() -> {
@@ -166,23 +184,10 @@ public class OnlineRankingManager {
     }
 
     /**
-     * 获取模拟的在线排行榜（按分数降序排列）
+     * 获取当前服务器地址（用于显示）
      */
-    private List<Score> getSimulatedRanking(String difficulty) {
-        List<Score> filtered = new ArrayList<>();
-        synchronized (simulatedOnlineScores) {
-            for (Score s : simulatedOnlineScores) {
-                if (difficulty.equals(s.getDifficulty())) {
-                    filtered.add(s);
-                }
-            }
-        }
-        Collections.sort(filtered, (a, b) -> b.getScore() - a.getScore());
-        // 最多返回前10名
-        if (filtered.size() > 10) {
-            filtered = filtered.subList(0, 10);
-        }
-        return filtered;
+    public String getServerUrl() {
+        return "http://" + serverHost + ":" + serverPort;
     }
 
     /**

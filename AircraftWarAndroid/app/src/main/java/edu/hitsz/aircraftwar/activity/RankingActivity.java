@@ -119,9 +119,11 @@ public class RankingActivity extends AppCompatActivity {
                 scoreList.clear();
                 scoreList.addAll(scores);
                 adapter.notifyDataSetChanged();
-                tvTitle.setText("在线排行榜 - " + getDifficultyName(currentDifficulty));
+                tvTitle.setText("🌐 在线排行榜 - " + getDifficultyName(currentDifficulty));
+                Toast.makeText(this, "已加载在线排行榜", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, "暂无在线数据，显示本地排行", Toast.LENGTH_SHORT).show();
+                loadScores();
             }
         });
     }

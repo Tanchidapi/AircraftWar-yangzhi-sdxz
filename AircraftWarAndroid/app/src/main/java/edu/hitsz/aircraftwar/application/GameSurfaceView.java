@@ -622,8 +622,32 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
     }
 
     private void drawScoreAndLife(Canvas canvas) {
-        canvas.drawText("SCORE:" + score, 10, 50, scorePaint);
-        canvas.drawText("LIFE:" + heroAircraft.getHp(), 10, 100, lifePaint);
+        // 绘制半透明HUD背景
+        Paint hudBgPaint = new Paint();
+        hudBgPaint.setColor(Color.argb(120, 0, 0, 0));
+        canvas.drawRect(0, 0, GameConfig.WINDOW_WIDTH, 120, hudBgPaint);
+
+        // 分数
+        scorePaint.setTextSize(36);
+        canvas.drawText("SCORE: " + score, 15, 42, scorePaint);
+
+        // 生命值
+        lifePaint.setTextSize(36);
+        canvas.drawText("HP: " + heroAircraft.getHp(), 15, 85, lifePaint);
+
+        // 难度标识
+        Paint diffPaint = new Paint();
+        diffPaint.setColor(Color.YELLOW);
+        diffPaint.setTextSize(28);
+        diffPaint.setAntiAlias(true);
+        diffPaint.setTextAlign(Paint.Align.RIGHT);
+        String diffText = "";
+        switch (difficulty) {
+            case "EASY": diffText = "简单"; break;
+            case "NORMAL": diffText = "普通"; break;
+            case "HARD": diffText = "困难"; break;
+        }
+        canvas.drawText(diffText, GameConfig.WINDOW_WIDTH - 15, 42, diffPaint);
     }
 
     // ==================== 音乐控制 ====================

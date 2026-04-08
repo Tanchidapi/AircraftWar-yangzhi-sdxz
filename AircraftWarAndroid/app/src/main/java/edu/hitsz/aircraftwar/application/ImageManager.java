@@ -15,6 +15,7 @@ import edu.hitsz.aircraftwar.prop.*;
 /**
  * 图片资源管理器（Android适配版）
  * 使用Android的BitmapFactory加载drawable资源
+ * 所有图片会按照逻辑坐标系(512x768)进行缩放，确保大小合理
  */
 public class ImageManager {
 
@@ -36,27 +37,62 @@ public class ImageManager {
     private static boolean initialized = false;
 
     /**
+     * 将Bitmap缩放到指定宽高
+     */
+    private static Bitmap scaleBitmap(Bitmap src, int targetWidth, int targetHeight) {
+        if (src == null) return null;
+        return Bitmap.createScaledBitmap(src, targetWidth, targetHeight, true);
+    }
+
+    /**
      * 初始化所有图片资源
      * @param context Android上下文
      */
     public static void init(Context context) {
         if (initialized) return;
 
-        // 默认加载简单模式背景
+        // 默认加载简单模式背景（背景不缩放，绘制时由Canvas拉伸）
         BACKGROUND_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.bg);
 
-        HERO_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.hero);
-        MOB_ENEMY_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.mob);
-        ELITE_ENEMY_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.elite);
-        SUPER_ELITE_ENEMY_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.eliteplus);
-        BOSS_ELITE_ENEMY_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.boss);
-        HERO_BULLET_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.bullet_hero);
-        ENEMY_BULLET_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.bullet_enemy);
-        PROP_BLOOD_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_blood);
-        PROP_BOMB_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_bomb);
-        PROP_BULLET_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_bullet);
-        SUPER_PROP_BULLET_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_bulletplus);
+        // 英雄机：约60x60
+        HERO_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.hero), 60, 60);
 
+        // 普通敌机：约45x40
+        MOB_ENEMY_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.mob), 45, 40);
+
+        // 精英敌机：约50x50
+        ELITE_ENEMY_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.elite), 50, 50);
+
+        // 超级精英敌机：约55x55
+        SUPER_ELITE_ENEMY_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.eliteplus), 55, 55);
+
+        // Boss敌机：约110x90
+        BOSS_ELITE_ENEMY_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.boss), 110, 90);
+
+        // 英雄子弹：约8x20
+        HERO_BULLET_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.bullet_hero), 8, 20);
+
+        // 敌机子弹：约8x20
+        ENEMY_BULLET_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.bullet_enemy), 8, 20);
+
+        // 道具：约35x35
+        PROP_BLOOD_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_blood), 35, 35);
+        PROP_BOMB_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_bomb), 35, 35);
+        PROP_BULLET_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_bullet), 35, 35);
+        SUPER_PROP_BULLET_IMAGE = scaleBitmap(
+                BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_bulletplus), 35, 35);
+
+        // 注册类名到图片的映射
         CLASSNAME_IMAGE_MAP.put(HeroAircraft.class.getName(), HERO_IMAGE);
         CLASSNAME_IMAGE_MAP.put(MobEnemy.class.getName(), MOB_ENEMY_IMAGE);
         CLASSNAME_IMAGE_MAP.put(EliteEnemy.class.getName(), ELITE_ENEMY_IMAGE);

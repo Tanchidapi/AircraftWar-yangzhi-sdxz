@@ -1,76 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#1a1a2e"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="40dp">
+    android:layout_height="match_parent">
 
-    <!-- 标题 -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="50dp"
-        android:text="飞 机 大 战"
-        android:textColor="#e94560"
-        android:textSize="36sp"
-        android:textStyle="bold" />
+    <!-- 背景图片 -->
+    <ImageView
+        android:id="@+id/iv_menu_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg" />
 
-    <!-- 简单模式按钮 -->
-    <Button
-        android:id="@+id/btn_easy"
-        android:layout_width="250dp"
-        android:layout_height="60dp"
-        android:layout_marginBottom="20dp"
-        android:background="#16213e"
-        android:text="简 单 模 式"
-        android:textColor="#0f3460"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+    <!-- 半透明遮罩层，增强文字可读性 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000" />
 
-    <!-- 普通模式按钮 -->
-    <Button
-        android:id="@+id/btn_normal"
-        android:layout_width="250dp"
-        android:layout_height="60dp"
-        android:layout_marginBottom="20dp"
-        android:background="#16213e"
-        android:text="普 通 模 式"
-        android:textColor="#e94560"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+    <!-- 内容区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="30dp">
 
-    <!-- 困难模式按钮 -->
-    <Button
-        android:id="@+id/btn_hard"
-        android:layout_width="250dp"
-        android:layout_height="60dp"
-        android:layout_marginBottom="30dp"
-        android:background="#16213e"
-        android:text="困 难 模 式"
-        android:textColor="#FF0000"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+        <!-- 顶部留白 -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1.5" />
 
-    <!-- 排行榜按钮 -->
-    <Button
-        android:id="@+id/btn_ranking"
-        android:layout_width="250dp"
-        android:layout_height="60dp"
-        android:layout_marginBottom="30dp"
-        android:background="#0f3460"
-        android:text="排 行 榜"
-        android:textColor="#FFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+        <!-- 游戏图标 -->
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginBottom="16dp"
+            android:src="@drawable/hero" />
 
-    <!-- 音效设置 -->
-    <Spinner
-        android:id="@+id/spinner_sound"
-        android:layout_width="200dp"
-        android:layout_height="50dp"
-        android:background="#16213e"
-        android:popupBackground="#1a1a2e" />
+        <!-- 标题 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="飞 机 大 战"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp"
+            android:textStyle="bold"
+            android:shadowColor="#e94560"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="20" />
 
-</LinearLayout>
+        <!-- 副标题 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="40dp"
+            android:text="AIRCRAFT WAR"
+            android:textColor="#88FFFFFF"
+            android:textSize="16sp"
+            android:letterSpacing="0.3" />
+
+        <!-- 简单模式按钮 -->
+        <Button
+            android:id="@+id/btn_easy"
+            android:layout_width="260dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="14dp"
+            android:background="@drawable/btn_easy_bg"
+            android:text="✈  简 单 模 式"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
+
+        <!-- 普通模式按钮 -->
+        <Button
+            android:id="@+id/btn_normal"
+            android:layout_width="260dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="14dp"
+            android:background="@drawable/btn_normal_bg"
+            android:text="⚔  普 通 模 式"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
+
+        <!-- 困难模式按钮 -->
+        <Button
+            android:id="@+id/btn_hard"
+            android:layout_width="260dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/btn_hard_bg"
+            android:text="🔥  困 难 模 式"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
+
+        <!-- 分隔线 -->
+        <View
+            android:layout_width="200dp"
+            android:layout_height="1dp"
+            android:layout_marginBottom="20dp"
+            android:background="#33FFFFFF" />
+
+        <!-- 排行榜按钮 -->
+        <Button
+            android:id="@+id/btn_ranking"
+            android:layout_width="260dp"
+            android:layout_height="50dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/btn_ranking_bg"
+            android:text="🏆  排 行 榜"
+            android:textColor="#FFD700"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
+
+        <!-- 音效设置区域 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔊 "
+                android:textSize="18sp" />
+
+            <Spinner
+                android:id="@+id/spinner_sound"
+                android:layout_width="160dp"
+                android:layout_height="44dp"
+                android:background="@drawable/spinner_bg"
+                android:popupBackground="#1a1a2e"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp" />
+        </LinearLayout>
+
+        <!-- 底部留白 -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- 版本信息 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="v1.0  ©  HIT 2026"
+            android:textColor="#55FFFFFF"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+</FrameLayout>

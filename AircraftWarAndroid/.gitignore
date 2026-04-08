@@ -1,0 +1,19 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/app/build
+/app/release
+*.apk
+*.ap_
+*.dex
+*.class
+*.log
+# 保留 raw 目录下的占位文件不上传
+app/src/main/res/raw/placeholder.txt

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="40dp">
+
+    <!-- 标题 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="50dp"
+        android:text="飞 机 大 战"
+        android:textColor="#e94560"
+        android:textSize="36sp"
+        android:textStyle="bold" />
+
+    <!-- 简单模式按钮 -->
+    <Button
+        android:id="@+id/btn_easy"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="20dp"
+        android:background="#16213e"
+        android:text="简 单 模 式"
+        android:textColor="#0f3460"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- 普通模式按钮 -->
+    <Button
+        android:id="@+id/btn_normal"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="20dp"
+        android:background="#16213e"
+        android:text="普 通 模 式"
+        android:textColor="#e94560"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- 困难模式按钮 -->
+    <Button
+        android:id="@+id/btn_hard"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="30dp"
+        android:background="#16213e"
+        android:text="困 难 模 式"
+        android:textColor="#FF0000"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- 排行榜按钮 -->
+    <Button
+        android:id="@+id/btn_ranking"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="30dp"
+        android:background="#0f3460"
+        android:text="排 行 榜"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- 音效设置 -->
+    <Spinner
+        android:id="@+id/spinner_sound"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:background="#16213e"
+        android:popupBackground="#1a1a2e" />
+
+</LinearLayout>

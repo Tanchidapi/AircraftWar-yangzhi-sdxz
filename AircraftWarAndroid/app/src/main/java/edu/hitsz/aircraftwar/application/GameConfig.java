@@ -35,13 +35,18 @@ public class GameConfig {
      * 动态调整逻辑高度以适配不同屏幕比例，消除黑边
      */
     public static void init(int screenWidth, int screenHeight) {
+        // 防止除零异常：宽高必须大于0
+        if (screenWidth <= 0 || screenHeight <= 0) {
+            return;
+        }
+
         SCREEN_WIDTH = screenWidth;
         SCREEN_HEIGHT = screenHeight;
 
         // 根据屏幕实际宽高比动态计算逻辑高度
         // 逻辑宽度固定为 WINDOW_WIDTH(512)，高度按比例缩放
         float screenRatio = (float) screenHeight / screenWidth;
-        WINDOW_HEIGHT = (int) (WINDOW_WIDTH * screenRatio);
+        WINDOW_HEIGHT = Math.max(1, (int) (WINDOW_WIDTH * screenRatio));
 
         // 缩放比例：统一使用宽度缩放比，保证X/Y缩放一致不变形
         SCALE_X = (float) screenWidth / WINDOW_WIDTH;

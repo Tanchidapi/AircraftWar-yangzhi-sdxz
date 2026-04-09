@@ -126,9 +126,10 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
         PropEffectManager.resetInstance();
 
         // 创建英雄机
+        int heroHeight = ImageManager.HERO_IMAGE != null ? ImageManager.HERO_IMAGE.getHeight() : 60;
         heroAircraft = HeroAircraft.getInstance(
                 GameConfig.WINDOW_WIDTH / 2,
-                GameConfig.WINDOW_HEIGHT - ImageManager.HERO_IMAGE.getHeight(),
+                GameConfig.WINDOW_HEIGHT - heroHeight,
                 0, 0, getHeroInitialHp());
 
         // 初始化列表
@@ -201,9 +202,10 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
         GameConfig.init(getWidth(), getHeight());
 
         // 重新调整英雄机位置（构造时WINDOW_HEIGHT可能还是默认值）
+        int heroImgHeight = ImageManager.HERO_IMAGE != null ? ImageManager.HERO_IMAGE.getHeight() : 60;
         heroAircraft.setLocation(
                 GameConfig.WINDOW_WIDTH / 2.0,
-                GameConfig.WINDOW_HEIGHT - ImageManager.HERO_IMAGE.getHeight());
+                GameConfig.WINDOW_HEIGHT - heroImgHeight);
 
         running = true;
         gameThread = new Thread(this);
@@ -561,6 +563,9 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
         try {
             canvas = getHolder().lockCanvas();
             if (canvas == null) return;
+
+            // 防止除零
+            if (GameConfig.WINDOW_WIDTH <= 0 || GameConfig.WINDOW_HEIGHT <= 0) return;
 
             // 计算缩放
             float scaleX = (float) canvas.getWidth() / GameConfig.WINDOW_WIDTH;

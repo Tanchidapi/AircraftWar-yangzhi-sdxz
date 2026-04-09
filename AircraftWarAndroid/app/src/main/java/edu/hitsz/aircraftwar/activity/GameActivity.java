@@ -5,8 +5,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -37,26 +35,9 @@ public class GameActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // 全屏沉浸式 —— 隐藏状态栏、导航栏，消除黑边
+        // 注意：必须在 setContentView 之前设置 Window flags
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11+ 使用 WindowInsetsController
-            getWindow().setDecorFitsSystemWindows(false);
-            getWindow().getInsetsController().hide(WindowInsets.Type.systemBars());
-            getWindow().getInsetsController().setSystemBarsBehavior(
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-        } else {
-            // Android 10 及以下使用 SystemUiVisibility
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-        }
 
         // 保持屏幕常亮
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -88,6 +69,55 @@ public class GameActivity extends AppCompatActivity {
         });
 
         setContentView(gameSurfaceView);
+
+        // 在 setContentView 之后设置沉浸式全屏（此时 DecorView 已创建）
+        enableImmersiveFullscreen();
+    }
+
+    /**
+     * 启用沉浸式全屏模式
+     * 必须在 setContentView 之后调用，否则 getInsetsController() 可能返回 null
+     */
+    private void enableImmersiveFullscreen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ 使用 WindowInsetsController
+            try {
+                getWindow().setDecorFitsSystemWindows(false);
+                android.view.WindowInsetsController controller = getWindow().getInsetsController();
+                if (controller != null) {
+                    controller.hide(android.view.WindowInsets.Type.systemBars());
+                    controller.setSystemBarsBehavior(
+                            android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                }
+            } catch (Exception e) {
+                // 回退到旧方式
+                setLegacyFullscreen();
+            }
+        } else {
+            setLegacyFullscreen();
+        }
+    }
+
+    /**
+     * 旧版全屏方式（Android 10 及以下）
+     */
+    private void setLegacyFullscreen() {
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        // 当窗口重新获得焦点时，重新进入沉浸式模式
+        if (hasFocus) {
+            enableImmersiveFullscreen();
+        }
     }
 
     /**

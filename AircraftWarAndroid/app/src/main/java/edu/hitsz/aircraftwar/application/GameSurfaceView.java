@@ -73,8 +73,9 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
     private String difficulty;
     private boolean soundEnabled;
 
-    // 触屏控制
-    private float touchX, touchY;
+    // 触屏控制（拖拽跟随模式，防止闪现）
+    private float lastTouchX = -1, lastTouchY = -1;
+    private boolean isTouching = false;
 
     // 画笔
     private Paint scorePaint;
@@ -199,6 +200,11 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
         // 根据实际Surface尺寸初始化缩放
         GameConfig.init(getWidth(), getHeight());
 
+        // 重新调整英雄机位置（构造时WINDOW_HEIGHT可能还是默认值）
+        heroAircraft.setLocation(
+                GameConfig.WINDOW_WIDTH / 2.0,
+                GameConfig.WINDOW_HEIGHT - ImageManager.HERO_IMAGE.getHeight());
+
         running = true;
         gameThread = new Thread(this);
         gameThread.start();
@@ -220,7 +226,7 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
         releaseSound();
     }
 
-    // ==================== 触屏控制（替代鼠标监听） ====================
+    // ==================== 触屏控制（拖拽跟随模式，防止闪现） ====================
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -232,12 +238,42 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                // 按下时记录触摸起始位置，不移动英雄机（防止闪现）
+                lastTouchX = logicX;
+                lastTouchY = logicY;
+                isTouching = true;
+                break;
+
             case MotionEvent.ACTION_MOVE:
-                // 边界检查
-                if (logicX >= 0 && logicX <= GameConfig.WINDOW_WIDTH
-                        && logicY >= 0 && logicY <= GameConfig.WINDOW_HEIGHT) {
-                    heroAircraft.setLocation(logicX, logicY);
+                if (isTouching && lastTouchX >= 0 && lastTouchY >= 0) {
+                    // 计算手指移动的增量
+                    float deltaX = logicX - lastTouchX;
+                    float deltaY = logicY - lastTouchY;
+
+                    // 英雄机按增量移动（跟随手指拖拽）
+                    float newX = heroAircraft.getLocationX() + deltaX;
+                    float newY = heroAircraft.getLocationY() + deltaY;
+
+                    // 边界限制
+                    int halfW = heroAircraft.getWidth() / 2;
+                    int halfH = heroAircraft.getHeight() / 2;
+                    newX = Math.max(halfW, Math.min(GameConfig.WINDOW_WIDTH - halfW, newX));
+                    newY = Math.max(halfH, Math.min(GameConfig.WINDOW_HEIGHT - halfH, newY));
+
+                    heroAircraft.setLocation(newX, newY);
+
+                    // 更新上次触摸位置
+                    lastTouchX = logicX;
+                    lastTouchY = logicY;
                 }
+                break;
+
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                // 手指抬起，重置触摸状态
+                isTouching = false;
+                lastTouchX = -1;
+                lastTouchY = -1;
                 break;
         }
         return true;

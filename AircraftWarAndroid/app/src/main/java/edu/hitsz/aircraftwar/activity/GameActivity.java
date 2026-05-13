@@ -194,8 +194,8 @@ public class GameActivity extends AppCompatActivity {
                 .setMessage("房间：" + battleRoomId + "\n玩家：" + battlePlayerName + "\n您的得分：" + score)
                 .setCancelable(false)
                 .setPositiveButton("提交并查看房间", (dialog, which) -> {
-                    BattleRoomManager.getInstance().submitBattleScore(battleRoomId, battleScore, success -> {
-                        if (success) {
+                    BattleRoomManager.getInstance().submitBattleScore(battleRoomId, battleScore, room -> {
+                        if (room != null) {
                             Toast.makeText(GameActivity.this,
                                     "对战分数已提交", Toast.LENGTH_SHORT).show();
                         } else {

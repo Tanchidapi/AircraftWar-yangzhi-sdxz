@@ -74,7 +74,8 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
     private boolean soundEnabled;
 
     // 触屏控制（拖拽跟随模式，防止闪现）
-    private float lastTouchX = -1, lastTouchY = -1;
+    private float touchStartX = -1, touchStartY = -1;
+    private float heroStartX = -1, heroStartY = -1;
     private boolean isTouching = false;
 
     // 画笔
@@ -239,19 +240,21 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
         float screenX = event.getX();
         float screenY = event.getY();
 
-        switch (event.getAction()) {
+        switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                // 按下时记录触摸起始位置（屏幕像素坐标），不移动英雄机（防止闪现）
-                lastTouchX = screenX;
-                lastTouchY = screenY;
+                // 按下时记录触摸和英雄机的锚点，不移动英雄机（防止闪现）
+                touchStartX = screenX;
+                touchStartY = screenY;
+                heroStartX = heroAircraft.getLocationX();
+                heroStartY = heroAircraft.getLocationY();
                 isTouching = true;
                 break;
 
             case MotionEvent.ACTION_MOVE:
-                if (isTouching && lastTouchX >= 0 && lastTouchY >= 0) {
-                    // 计算手指在屏幕上移动的像素增量
-                    float screenDeltaX = screenX - lastTouchX;
-                    float screenDeltaY = screenY - lastTouchY;
+                if (isTouching && touchStartX >= 0 && touchStartY >= 0) {
+                    // 使用相对按下点的总位移，避免逐次取整导致英雄机移动距离小于手指移动距离
+                    float screenDeltaX = screenX - touchStartX;
+                    float screenDeltaY = screenY - touchStartY;
 
                     // 将像素增量转换为逻辑坐标增量（使用当前最新的缩放比例）
                     float scaleX = GameConfig.SCALE_X > 0 ? GameConfig.SCALE_X : 1.0f;
@@ -260,8 +263,8 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
                     float logicDeltaY = screenDeltaY / scaleY;
 
                     // 英雄机按逻辑增量移动（跟随手指拖拽）
-                    float newX = heroAircraft.getLocationX() + logicDeltaX;
-                    float newY = heroAircraft.getLocationY() + logicDeltaY;
+                    float newX = heroStartX + logicDeltaX;
+                    float newY = heroStartY + logicDeltaY;
 
                     // 边界限制
                     int halfW = heroAircraft.getWidth() / 2;
@@ -270,10 +273,6 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
                     newY = Math.max(halfH, Math.min(GameConfig.WINDOW_HEIGHT - halfH, newY));
 
                     heroAircraft.setLocation(newX, newY);
-
-                    // 更新上次触摸位置（屏幕像素坐标）
-                    lastTouchX = screenX;
-                    lastTouchY = screenY;
                 }
                 break;
 
@@ -281,8 +280,10 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
             case MotionEvent.ACTION_CANCEL:
                 // 手指抬起，重置触摸状态
                 isTouching = false;
-                lastTouchX = -1;
-                lastTouchY = -1;
+                touchStartX = -1;
+                touchStartY = -1;
+                heroStartX = -1;
+                heroStartY = -1;
                 break;
         }
         return true;

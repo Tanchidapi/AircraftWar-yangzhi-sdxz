@@ -1,87 +1,255 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1a1a2e"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:background="#1a1a2e">
 
-    <TextView
-        android:id="@+id/tv_battle_title"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="对战房间"
-        android:textColor="#e94560"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <TextView
-        android:id="@+id/tv_battle_status"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="正在获取房间结果..."
-        android:textColor="#CCCCCC"
-        android:textSize="15sp"
-        android:layout_marginBottom="24dp" />
+        <TextView
+            android:id="@+id/tv_battle_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="联机对战房间"
+            android:textColor="#e94560"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp" />
 
-    <TextView
-        android:id="@+id/tv_player_one"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#16213e"
-        android:padding="18dp"
-        android:text="玩家1：等待提交分数"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:layout_marginBottom="14dp" />
+        <TextView
+            android:id="@+id/tv_battle_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="选择服务器 IP 后创建或加入房间"
+            android:textColor="#CCCCCC"
+            android:textSize="15sp"
+            android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:id="@+id/tv_player_two"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#16213e"
-        android:padding="18dp"
-        android:text="玩家2：等待提交分数"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:layout_marginBottom="24dp" />
+        <TextView
+            android:id="@+id/tv_server_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="服务器：http://10.0.2.2:5000"
+            android:textColor="#88FFFFFF"
+            android:textSize="13sp"
+            android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:id="@+id/tv_winner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textColor="#FFD700"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:visibility="gone"
-        android:layout_marginBottom="24dp" />
+        <LinearLayout
+            android:id="@+id/panel_room_setup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-    <View
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="服务器 IP"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
 
-    <Button
-        android:id="@+id/btn_refresh_room"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:layout_marginBottom="12dp"
-        android:background="#0f3460"
-        android:text="刷新房间结果"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp" />
+            <EditText
+                android:id="@+id/input_server_host"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="10dp"
+                android:background="#16213e"
+                android:hint="10.0.2.2 或 192.168.x.x"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="10.0.2.2"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888" />
 
-    <Button
-        android:id="@+id/btn_back_menu"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:background="#e94560"
-        android:text="返回"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="服务器端口"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
 
-</LinearLayout>
+            <EditText
+                android:id="@+id/input_server_port"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="10dp"
+                android:background="#16213e"
+                android:hint="5000"
+                android:inputType="number"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="5000"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="房间号"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/input_room_id"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="10dp"
+                android:background="#16213e"
+                android:hint="例如 room1001"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="玩家名"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/input_player_name"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="10dp"
+                android:background="#16213e"
+                android:hint="Player"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Player"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="房主创建房间时选择难度"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+            <Spinner
+                android:id="@+id/spinner_battle_difficulty"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="18dp"
+                android:background="#16213e" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_create_room"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:background="#e94560"
+                    android:text="开房间"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <Button
+                    android:id="@+id/btn_join_room"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:background="#0f3460"
+                    android:text="加入房间"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/panel_room_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_player_one"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#16213e"
+                android:padding="18dp"
+                android:text="玩家1：等待加入"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:layout_marginBottom="14dp" />
+
+            <TextView
+                android:id="@+id/tv_player_two"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#16213e"
+                android:padding="18dp"
+                android:text="玩家2：等待加入"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:layout_marginBottom="20dp" />
+
+            <TextView
+                android:id="@+id/tv_winner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="#FFD700"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:layout_marginBottom="20dp" />
+
+            <Button
+                android:id="@+id/btn_start_room"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginBottom="12dp"
+                android:background="#e94560"
+                android:text="开始游戏（房主）"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btn_again_room"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginBottom="12dp"
+                android:background="#0f3460"
+                android:text="再来一局"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btn_refresh_room"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginBottom="12dp"
+                android:background="#16213e"
+                android:text="刷新房间"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/btn_leave_room"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="#333333"
+                android:text="退出房间"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

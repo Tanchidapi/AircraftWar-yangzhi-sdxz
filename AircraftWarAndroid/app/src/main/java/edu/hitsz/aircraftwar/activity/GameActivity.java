@@ -33,6 +33,7 @@ public class GameActivity extends AppCompatActivity {
     private boolean battleMode;
     private String battleRoomId;
     private String battlePlayerName;
+    private int battleRoundNo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +53,7 @@ public class GameActivity extends AppCompatActivity {
         battleMode = getIntent().getBooleanExtra("battleMode", false);
         battleRoomId = getIntent().getStringExtra("battleRoomId");
         battlePlayerName = getIntent().getStringExtra("battlePlayerName");
+        battleRoundNo = getIntent().getIntExtra("battleRoundNo", 1);
 
         if (difficulty == null) difficulty = "EASY";
         if (battlePlayerName == null || battlePlayerName.trim().isEmpty()) battlePlayerName = "Player";
@@ -185,7 +187,7 @@ public class GameActivity extends AppCompatActivity {
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         BattleRoomManager.BattleScore battleScore = new BattleRoomManager.BattleScore(
-                battlePlayerName, score, currentTime, difficulty);
+                battlePlayerName, score, currentTime, difficulty, battleRoundNo);
 
         new AlertDialog.Builder(this)
                 .setTitle("对战结束")
@@ -203,6 +205,7 @@ public class GameActivity extends AppCompatActivity {
                         Intent intent = new Intent(GameActivity.this, BattleRoomActivity.class);
                         intent.putExtra("battleRoomId", battleRoomId);
                         intent.putExtra("battlePlayerName", battlePlayerName);
+                        intent.putExtra("battleJoined", true);
                         startActivity(intent);
                         finish();
                     });

@@ -93,9 +93,22 @@
             android:id="@+id/btn_hard"
             android:layout_width="260dp"
             android:layout_height="56dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="14dp"
             android:background="@drawable/btn_hard_bg"
             android:text="🔥  困 难 模 式"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
+
+        <!-- 联机对战按钮 -->
+        <Button
+            android:id="@+id/btn_battle"
+            android:layout_width="260dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/btn_normal_bg"
+            android:text="⚡  联 机 对 战"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:textStyle="bold"

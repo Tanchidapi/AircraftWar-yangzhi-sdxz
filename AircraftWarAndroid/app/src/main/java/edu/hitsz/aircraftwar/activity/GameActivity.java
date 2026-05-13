@@ -19,6 +19,7 @@ import edu.hitsz.aircraftwar.application.*;
 import edu.hitsz.aircraftwar.dao.Score;
 import edu.hitsz.aircraftwar.dao.ScoreDao;
 import edu.hitsz.aircraftwar.dao.ScoreDaoImpl;
+import edu.hitsz.aircraftwar.network.BattleRoomManager;
 import edu.hitsz.aircraftwar.network.OnlineRankingManager;
 
 /**
@@ -29,6 +30,9 @@ public class GameActivity extends AppCompatActivity {
 
     private GameSurfaceView gameSurfaceView;
     private ScoreDao scoreDao;
+    private boolean battleMode;
+    private String battleRoomId;
+    private String battlePlayerName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,8 +49,12 @@ public class GameActivity extends AppCompatActivity {
         // 获取参数
         String difficulty = getIntent().getStringExtra("difficulty");
         boolean soundEnabled = getIntent().getBooleanExtra("soundEnabled", true);
+        battleMode = getIntent().getBooleanExtra("battleMode", false);
+        battleRoomId = getIntent().getStringExtra("battleRoomId");
+        battlePlayerName = getIntent().getStringExtra("battlePlayerName");
 
         if (difficulty == null) difficulty = "EASY";
+        if (battlePlayerName == null || battlePlayerName.trim().isEmpty()) battlePlayerName = "Player";
 
         scoreDao = new ScoreDaoImpl(this);
 
@@ -124,6 +132,11 @@ public class GameActivity extends AppCompatActivity {
      * 游戏结束对话框
      */
     private void showGameOverDialog(int score, String difficulty) {
+        if (battleMode) {
+            showBattleGameOverDialog(score, difficulty);
+            return;
+        }
+
         EditText input = new EditText(this);
         input.setHint("请输入您的名字");
         input.setText("Player");
@@ -163,6 +176,36 @@ public class GameActivity extends AppCompatActivity {
                     intent.putExtra("currentScore", score);
                     startActivity(intent);
                     finish();
+                })
+                .show();
+    }
+
+    private void showBattleGameOverDialog(int score, String difficulty) {
+        String currentTime = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        BattleRoomManager.BattleScore battleScore = new BattleRoomManager.BattleScore(
+                battlePlayerName, score, currentTime, difficulty);
+
+        new AlertDialog.Builder(this)
+                .setTitle("对战结束")
+                .setMessage("房间：" + battleRoomId + "\n玩家：" + battlePlayerName + "\n您的得分：" + score)
+                .setCancelable(false)
+                .setPositiveButton("提交并查看房间", (dialog, which) -> {
+                    BattleRoomManager.getInstance().submitBattleScore(battleRoomId, battleScore, success -> {
+                        if (success) {
+                            Toast.makeText(GameActivity.this,
+                                    "对战分数已提交", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(GameActivity.this,
+                                    "对战分数提交失败，请稍后刷新", Toast.LENGTH_SHORT).show();
+                        }
+                        Intent intent = new Intent(GameActivity.this, BattleRoomActivity.class);
+                        intent.putExtra("battleRoomId", battleRoomId);
+                        intent.putExtra("battlePlayerName", battlePlayerName);
+                        startActivity(intent);
+                        finish();
+                    });
                 })
                 .show();
     }

@@ -36,6 +36,11 @@
             android:name=".activity.RankingActivity"
             android:screenOrientation="portrait" />
 
+        <!-- 对战房间结果Activity -->
+        <activity
+            android:name=".activity.BattleRoomActivity"
+            android:screenOrientation="portrait" />
+
     </application>
 
 </manifest>

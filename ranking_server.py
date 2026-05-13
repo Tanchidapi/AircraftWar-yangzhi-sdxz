@@ -7,6 +7,8 @@
 # API 接口:
 #   POST /api/scores          - 提交分数
 #   GET  /api/ranking?difficulty=EASY  - 获取排行榜
+#   POST /api/battle/rooms/<room_id>/scores - 提交对战房间分数
+#   GET  /api/battle/rooms/<room_id>        - 获取对战房间结果
 #   GET  /api/health           - 健康检查
 
 import sqlite3
@@ -40,6 +42,18 @@ def init_db():
             play_time TEXT NOT NULL,
             difficulty TEXT NOT NULL DEFAULT 'EASY',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS battle_scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            room_id TEXT NOT NULL,
+            player_name TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            play_time TEXT NOT NULL,
+            difficulty TEXT NOT NULL DEFAULT 'EASY',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(room_id, player_name)
         )
     ''')
     conn.commit()
@@ -143,6 +157,86 @@ def get_ranking():
 
     except Exception as e:
         print(f'[错误] 获取排行榜失败: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/battle/rooms/<room_id>/scores', methods=['POST'])
+def submit_battle_score(room_id):
+    """提交对战房间分数。每个房间按玩家名保留最新一次成绩。"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '请求体为空'}), 400
+
+        room_id = (room_id or '').strip()
+        player_name = data.get('playerName', 'Player')
+        score = data.get('score', 0)
+        play_time = data.get('playTime', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        difficulty = data.get('difficulty', 'EASY')
+
+        if not room_id:
+            return jsonify({'error': '房间号不能为空'}), 400
+        if not isinstance(score, int) or score < 0:
+            return jsonify({'error': '分数必须为非负整数'}), 400
+        if difficulty not in ('EASY', 'NORMAL', 'HARD'):
+            return jsonify({'error': '难度必须为 EASY/NORMAL/HARD'}), 400
+
+        player_name = (player_name or 'Player').strip() or 'Player'
+
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            '''
+            INSERT INTO battle_scores (room_id, player_name, score, play_time, difficulty)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(room_id, player_name) DO UPDATE SET
+                score = excluded.score,
+                play_time = excluded.play_time,
+                difficulty = excluded.difficulty,
+                created_at = CURRENT_TIMESTAMP
+            ''',
+            (room_id, player_name, score, play_time, difficulty)
+        )
+        conn.commit()
+        conn.close()
+
+        print(f'[对战提交] 房间 {room_id} - {player_name} - {score}分 - {difficulty}')
+        return jsonify({'success': True}), 201
+
+    except Exception as e:
+        print(f'[错误] 提交对战分数失败: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/battle/rooms/<room_id>', methods=['GET'])
+def get_battle_room(room_id):
+    """获取对战房间结果。两个玩家提交后 allFinished 为 true。"""
+    try:
+        room_id = (room_id or '').strip()
+        if not room_id:
+            return jsonify({'error': '房间号不能为空'}), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT player_name AS playerName, score, play_time AS playTime, difficulty '
+            'FROM battle_scores WHERE room_id = ? ORDER BY score DESC, created_at ASC',
+            (room_id,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        players = [dict(row) for row in rows]
+        result = {
+            'roomId': room_id,
+            'allFinished': len(players) >= 2,
+            'players': players[:2]
+        }
+        print(f'[查询对战房间] {room_id} - {len(players)} 位玩家')
+        return jsonify(result), 200
+
+    except Exception as e:
+        print(f'[错误] 获取对战房间失败: {e}')
         return jsonify({'error': str(e)}), 500
 
 

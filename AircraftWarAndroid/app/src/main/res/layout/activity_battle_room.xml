@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tv_battle_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="对战房间"
+        android:textColor="#e94560"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tv_battle_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="正在获取房间结果..."
+        android:textColor="#CCCCCC"
+        android:textSize="15sp"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tv_player_one"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#16213e"
+        android:padding="18dp"
+        android:text="玩家1：等待提交分数"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:layout_marginBottom="14dp" />
+
+    <TextView
+        android:id="@+id/tv_player_two"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#16213e"
+        android:padding="18dp"
+        android:text="玩家2：等待提交分数"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tv_winner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="#FFD700"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:layout_marginBottom="24dp" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/btn_refresh_room"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginBottom="12dp"
+        android:background="#0f3460"
+        android:text="刷新房间结果"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btn_back_menu"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:background="#e94560"
+        android:text="返回"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp" />
+
+</LinearLayout>

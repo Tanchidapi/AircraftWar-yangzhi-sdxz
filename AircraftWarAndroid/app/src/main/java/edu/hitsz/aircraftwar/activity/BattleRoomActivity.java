@@ -344,6 +344,7 @@ public class BattleRoomActivity extends AppCompatActivity {
             if (player.isReadyNext()) text.append("\n  [已准备再来一局]");
         } else if ("playing".equals(room.getStatus())) {
             text.append("\n  状态: ").append(player.isFinished() ? "已完成" : "游戏中...");
+            text.append("\n  实时得分: ").append(player.getScore() == null ? 0 : player.getScore());
         } else {
             // waiting状态
             text.append("\n  状态: ").append(player.isReady() ? "已准备" : "未准备");

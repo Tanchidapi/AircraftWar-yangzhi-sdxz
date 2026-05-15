@@ -3,6 +3,8 @@ package edu.hitsz.aircraftwar.activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.WindowManager;
@@ -34,6 +36,16 @@ public class GameActivity extends AppCompatActivity {
     private String battleRoomId;
     private String battlePlayerName;
     private int battleRoundNo;
+    private String difficulty;
+    private final Handler battleScoreHandler = new Handler(Looper.getMainLooper());
+    private int lastSyncedBattleScore = -1;
+    private final Runnable battleScoreSyncTask = new Runnable() {
+        @Override
+        public void run() {
+            syncBattleScorePreview();
+            battleScoreHandler.postDelayed(this, 1000L);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +60,7 @@ public class GameActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         // 获取参数
-        String difficulty = getIntent().getStringExtra("difficulty");
+        difficulty = getIntent().getStringExtra("difficulty");
         boolean soundEnabled = getIntent().getBooleanExtra("soundEnabled", true);
         battleMode = getIntent().getBooleanExtra("battleMode", false);
         battleRoomId = getIntent().getStringExtra("battleRoomId");
@@ -82,6 +94,10 @@ public class GameActivity extends AppCompatActivity {
 
         // 在 setContentView 之后设置沉浸式全屏（此时 DecorView 已创建）
         enableImmersiveFullscreen();
+
+        if (battleMode) {
+            gameSurfaceView.setOnScoreChangeListener((score, diff) -> syncBattleScorePreview());
+        }
     }
 
     /**
@@ -183,6 +199,7 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void showBattleGameOverDialog(int score, String difficulty) {
+        battleScoreHandler.removeCallbacks(battleScoreSyncTask);
         String currentTime = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
@@ -213,9 +230,36 @@ public class GameActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void syncBattleScorePreview() {
+        if (!battleMode || gameSurfaceView == null || gameSurfaceView.isGameOver()) {
+            return;
+        }
+        int currentScore = gameSurfaceView.getScore();
+        if (currentScore == lastSyncedBattleScore) {
+            return;
+        }
+        lastSyncedBattleScore = currentScore;
+        String currentTime = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        BattleRoomManager.BattleScore previewScore = new BattleRoomManager.BattleScore(
+                battlePlayerName, currentScore, currentTime, difficulty, battleRoundNo);
+        BattleRoomManager.getInstance().updateBattleScore(battleRoomId, previewScore, room -> {
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (battleMode) {
+            battleScoreHandler.removeCallbacks(battleScoreSyncTask);
+            battleScoreHandler.postDelayed(battleScoreSyncTask, 1000L);
+        }
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
+        battleScoreHandler.removeCallbacks(battleScoreSyncTask);
         if (gameSurfaceView != null) {
             gameSurfaceView.stopGame();
         }
@@ -224,6 +268,7 @@ public class GameActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        battleScoreHandler.removeCallbacks(battleScoreSyncTask);
         if (gameSurfaceView != null) {
             gameSurfaceView.stopGame();
         }

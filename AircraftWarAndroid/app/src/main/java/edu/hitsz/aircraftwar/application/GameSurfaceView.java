@@ -94,13 +94,42 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
 
     // 游戏结束回调
     private OnGameOverListener gameOverListener;
+    private OnScoreChangeListener scoreChangeListener;
 
     public interface OnGameOverListener {
         void onGameOver(int score, String difficulty);
     }
 
+    public interface OnScoreChangeListener {
+        void onScoreChanged(int score, String difficulty);
+    }
+
     public void setOnGameOverListener(OnGameOverListener listener) {
         this.gameOverListener = listener;
+    }
+
+    /** 获取当前得分（用于联机实时上报） */
+    public int getScore() {
+        return score;
+    }
+
+    /** 判断游戏是否已经结束 */
+    public boolean isGameOver() {
+        return gameOverFlag;
+    }
+
+    public void setOnScoreChangeListener(OnScoreChangeListener listener) {
+        this.scoreChangeListener = listener;
+    }
+
+    private void updateScore(int delta) {
+        if (delta == 0) {
+            return;
+        }
+        score += delta;
+        if (scoreChangeListener != null) {
+            post(() -> scoreChangeListener.onScoreChanged(score, difficulty));
+        }
     }
 
     public GameSurfaceView(Context context, String difficulty, boolean soundEnabled) {
@@ -483,7 +512,7 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
                     }
 
                     if (enemy.notValid()) {
-                        score += 10;
+                        updateScore(10);
 
                         // Boss坠毁恢复背景音乐
                         if (enemy instanceof BossEliteEnemy && soundEnabled) {
@@ -531,7 +560,7 @@ public abstract class GameSurfaceView extends SurfaceView implements SurfaceHold
                         soundPool.play(soundBombExplosion, 1, 1, 1, 0, 1);
                     }
                     int earnedScore = bombSubject.bombExplode();
-                    score += earnedScore;
+                    updateScore(earnedScore);
                 } else if (prop instanceof BulletProp) {
                     PropEffectManager.getInstance().activateScatterEffect(12000);
                 } else if (prop instanceof SuperBulletProp) {

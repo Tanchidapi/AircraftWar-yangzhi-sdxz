@@ -110,6 +110,15 @@ public class BattleRoomManager {
         post(url, score, callback);
     }
 
+    /**
+     * 实时更新对战分数（不触发局结束）。用于在游戏进行中将当前得分同步到服务器，供对手实时预览。
+     */
+    public void updateBattleScore(String roomId, BattleScore score,
+                                  OnlineRankingManager.OnResultCallback<BattleRoom> callback) {
+        String url = getBaseUrl() + "/battle/rooms/" + roomId + "/score_update";
+        post(url, score, callback);
+    }
+
     public void readyAgain(String roomId, String playerName,
                            OnlineRankingManager.OnResultCallback<BattleRoom> callback) {
         Map<String, Object> data = new HashMap<>();
@@ -268,6 +277,8 @@ public class BattleRoomManager {
         private Integer score;
         private String playTime;
         private String difficulty;
+        private Integer liveRoundNo;
+        private String liveUpdatedAt;
 
         public String getPlayerName() { return playerName; }
         public boolean isHost() { return isHost; }
@@ -277,6 +288,8 @@ public class BattleRoomManager {
         public Integer getScore() { return score; }
         public String getPlayTime() { return playTime; }
         public String getDifficulty() { return difficulty; }
+        public Integer getLiveRoundNo() { return liveRoundNo; }
+        public String getLiveUpdatedAt() { return liveUpdatedAt; }
     }
 
     public static class BattleRoom {

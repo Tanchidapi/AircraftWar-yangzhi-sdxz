@@ -66,6 +66,9 @@ def init_db():
             is_host INTEGER NOT NULL DEFAULT 0,
             ready INTEGER NOT NULL DEFAULT 0,
             ready_next INTEGER NOT NULL DEFAULT 0,
+            live_score INTEGER,
+            live_round_no INTEGER,
+            live_updated_at TEXT,
             joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY(room_id, player_name)
         )
@@ -74,6 +77,12 @@ def init_db():
     player_columns = [row[1] for row in cursor.fetchall()]
     if 'ready' not in player_columns:
         cursor.execute('ALTER TABLE battle_players ADD COLUMN ready INTEGER NOT NULL DEFAULT 0')
+    if 'live_score' not in player_columns:
+        cursor.execute('ALTER TABLE battle_players ADD COLUMN live_score INTEGER')
+    if 'live_round_no' not in player_columns:
+        cursor.execute('ALTER TABLE battle_players ADD COLUMN live_round_no INTEGER')
+    if 'live_updated_at' not in player_columns:
+        cursor.execute('ALTER TABLE battle_players ADD COLUMN live_updated_at TEXT')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS battle_scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -235,7 +244,8 @@ def fetch_battle_room(cursor, room_id):
         return None
 
     cursor.execute(
-        'SELECT player_name AS playerName, is_host AS isHost, ready AS ready, ready_next AS readyNext '
+        'SELECT player_name AS playerName, is_host AS isHost, ready AS ready, ready_next AS readyNext, '
+        'live_score AS liveScore, live_round_no AS liveRoundNo, live_updated_at AS liveUpdatedAt '
         'FROM battle_players WHERE room_id = ? ORDER BY is_host DESC, joined_at ASC',
         (room_id,)
     )
@@ -255,7 +265,14 @@ def fetch_battle_room(cursor, room_id):
         player['ready'] = bool(player['ready'])
         player['readyNext'] = bool(player['readyNext'])
         player['finished'] = score is not None
-        player['score'] = score['score'] if score else None
+        live_score = player.get('liveScore')
+        live_round_no = player.get('liveRoundNo')
+        if score:
+            player['score'] = score['score']
+        elif room['status'] == 'playing' and live_score is not None and live_round_no == room['round_no']:
+            player['score'] = live_score
+        else:
+            player['score'] = None
         player['playTime'] = score['playTime'] if score else None
         player['difficulty'] = score['difficulty'] if score else room['difficulty']
 
@@ -345,7 +362,8 @@ def join_battle_room(room_id):
 
         if not exists:
             cursor.execute(
-                'INSERT INTO battle_players (room_id, player_name, is_host, ready, ready_next) VALUES (?, ?, 0, 0, 0)',
+                'INSERT INTO battle_players (room_id, player_name, is_host, ready, ready_next, live_score, live_round_no, live_updated_at) '
+                'VALUES (?, ?, 0, 0, 0, NULL, NULL, NULL)',
                 (room_id, player_name)
             )
         conn.commit()
@@ -405,6 +423,12 @@ def ready_battle_room(room_id):
                 (room_id,)
             )
             cursor.execute('UPDATE battle_players SET ready_next = 0 WHERE room_id = ?', (room_id,))
+            cursor.execute(
+                'UPDATE battle_players SET live_score = 0, live_round_no = '
+                '(SELECT round_no FROM battle_rooms WHERE room_id = ?), live_updated_at = CURRENT_TIMESTAMP '
+                'WHERE room_id = ?',
+                (room_id, room_id)
+            )
 
         conn.commit()
         battle_room = fetch_battle_room(cursor, room_id)
@@ -500,6 +524,11 @@ def submit_battle_score(room_id):
             (room_id, current_round, player_name)
         )
         cursor.execute(
+            'UPDATE battle_players SET live_score = ?, live_round_no = ?, live_updated_at = CURRENT_TIMESTAMP '
+            'WHERE room_id = ? AND player_name = ?',
+            (score, current_round, room_id, player_name)
+        )
+        cursor.execute(
             'INSERT INTO battle_scores (room_id, round_no, player_name, score, play_time, difficulty) '
             'VALUES (?, ?, ?, ?, ?, ?)',
             (room_id, current_round, player_name, score, play_time, difficulty or room['difficulty'])
@@ -522,6 +551,54 @@ def submit_battle_score(room_id):
 
     except Exception as e:
         print(f'[错误] 提交对战分数失败: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/battle/rooms/<room_id>/score_update', methods=['POST'])
+def update_battle_score(room_id):
+    """更新当前局实时分数，供对手在房间页预览。"""
+    try:
+        data = request.get_json() or {}
+        room_id = normalize_room_id(room_id)
+        player_name = normalize_player_name(data.get('playerName'))
+        score = data.get('score', 0)
+        round_no = data.get('roundNo')
+
+        if not isinstance(score, int) or score < 0:
+            return jsonify({'error': '分数必须为非负整数'}), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT round_no, status FROM battle_rooms WHERE room_id = ?', (room_id,))
+        room = cursor.fetchone()
+        if not room:
+            conn.close()
+            return jsonify({'error': '房间不存在'}), 404
+        current_round = room['round_no']
+        if room['status'] != 'playing':
+            conn.close()
+            return jsonify({'error': '当前房间不处于对局中'}), 409
+        if round_no is not None and int(round_no) != current_round:
+            conn.close()
+            return jsonify({'error': '对局轮次已过期'}), 409
+
+        cursor.execute(
+            'UPDATE battle_players SET live_score = ?, live_round_no = ?, live_updated_at = CURRENT_TIMESTAMP '
+            'WHERE room_id = ? AND player_name = ?',
+            (score, current_round, room_id, player_name)
+        )
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': '玩家不在房间内'}), 404
+
+        conn.commit()
+        battle_room = fetch_battle_room(cursor, room_id)
+        conn.close()
+
+        return jsonify(battle_room), 200
+
+    except Exception as e:
+        print(f'[错误] 更新实时分数失败: {e}')
         return jsonify({'error': str(e)}), 500
 
 
@@ -558,7 +635,12 @@ def ready_battle_again(room_id):
                 "updated_at = CURRENT_TIMESTAMP WHERE room_id = ?",
                 (room_id,)
             )
-            cursor.execute('UPDATE battle_players SET ready = 1, ready_next = 0 WHERE room_id = ?', (room_id,))
+            cursor.execute(
+                'UPDATE battle_players SET ready = 1, ready_next = 0, live_score = 0, '
+                'live_round_no = (SELECT round_no FROM battle_rooms WHERE room_id = ?), '
+                'live_updated_at = CURRENT_TIMESTAMP WHERE room_id = ?',
+                (room_id, room_id)
+            )
         conn.commit()
         battle_room = fetch_battle_room(cursor, room_id)
         conn.close()
@@ -608,7 +690,11 @@ def leave_battle_room(room_id):
                     'UPDATE battle_players SET is_host = 1 WHERE room_id = ? AND player_name = ?',
                     (room_id, new_host)
                 )
-            cursor.execute('UPDATE battle_players SET ready = 0, ready_next = 0 WHERE room_id = ?', (room_id,))
+            cursor.execute(
+                'UPDATE battle_players SET ready = 0, ready_next = 0, live_score = NULL, '
+                'live_round_no = NULL, live_updated_at = NULL WHERE room_id = ?',
+                (room_id,)
+            )
             room = fetch_battle_room(cursor, room_id)
         conn.commit()
         conn.close()

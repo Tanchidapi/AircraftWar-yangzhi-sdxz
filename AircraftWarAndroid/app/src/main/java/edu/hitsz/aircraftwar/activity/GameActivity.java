@@ -5,6 +5,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.WindowManager;
@@ -46,6 +48,16 @@ public class GameActivity extends AppCompatActivity {
             battleScoreHandler.postDelayed(this, 1000L);
         }
     };
+    // 对手实时分数展示
+    private final Handler opponentScoreHandler = new Handler(Looper.getMainLooper());
+    private final Runnable opponentScoreTask = new Runnable() {
+        @Override
+        public void run() {
+            fetchOpponentScore();
+            opponentScoreHandler.postDelayed(this, 1000L);
+        }
+    };
+    private TextView tvOpponentScore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,14 +102,31 @@ public class GameActivity extends AppCompatActivity {
             showGameOverDialog(score, diff);
         });
 
-        setContentView(gameSurfaceView);
+        // 包装 GameSurfaceView 与对手分数显示 TextView
+        FrameLayout root = new FrameLayout(this);
+        root.addView(gameSurfaceView);
+        if (battleMode) {
+            // 对手分数显示在右上角
+            tvOpponentScore = new TextView(this);
+            tvOpponentScore.setTextColor(0xFFFFFFFF);
+            tvOpponentScore.setTextSize(16);
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT);
+            lp.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+            lp.topMargin = 20;
+            lp.rightMargin = 20;
+            tvOpponentScore.setLayoutParams(lp);
+            tvOpponentScore.setText("对手 得分: 0");
+            root.addView(tvOpponentScore);
+
+            // 监听己方分数变化用于上报
+            gameSurfaceView.setOnScoreChangeListener((score, diff) -> syncBattleScorePreview());
+        }
+        setContentView(root);
 
         // 在 setContentView 之后设置沉浸式全屏（此时 DecorView 已创建）
         enableImmersiveFullscreen();
-
-        if (battleMode) {
-            gameSurfaceView.setOnScoreChangeListener((score, diff) -> syncBattleScorePreview());
-        }
     }
 
     /**
@@ -247,12 +276,37 @@ public class GameActivity extends AppCompatActivity {
         });
     }
 
+    private void fetchOpponentScore() {
+        if (!battleMode || gameSurfaceView == null || gameSurfaceView.isGameOver() || tvOpponentScore == null) {
+            return;
+        }
+        BattleRoomManager.getInstance().getBattleRoom(battleRoomId, room -> {
+            if (room == null || room.getPlayers() == null) {
+                return;
+            }
+            int opponentScore = 0;
+            String opponentName = "对手";
+            for (BattleRoomManager.BattlePlayer player : room.getPlayers()) {
+                if (!battlePlayerName.equals(player.getPlayerName())) {
+                    opponentName = player.getPlayerName();
+                    if (player.getScore() != null) {
+                        opponentScore = player.getScore();
+                    }
+                    break;
+                }
+            }
+            tvOpponentScore.setText(opponentName + " 得分: " + opponentScore);
+        });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         if (battleMode) {
             battleScoreHandler.removeCallbacks(battleScoreSyncTask);
             battleScoreHandler.postDelayed(battleScoreSyncTask, 1000L);
+            opponentScoreHandler.removeCallbacks(opponentScoreTask);
+            opponentScoreHandler.postDelayed(opponentScoreTask, 1000L);
         }
     }
 
@@ -260,6 +314,7 @@ public class GameActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         battleScoreHandler.removeCallbacks(battleScoreSyncTask);
+        opponentScoreHandler.removeCallbacks(opponentScoreTask);
         if (gameSurfaceView != null) {
             gameSurfaceView.stopGame();
         }
@@ -269,6 +324,7 @@ public class GameActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         battleScoreHandler.removeCallbacks(battleScoreSyncTask);
+        opponentScoreHandler.removeCallbacks(opponentScoreTask);
         if (gameSurfaceView != null) {
             gameSurfaceView.stopGame();
         }

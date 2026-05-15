@@ -64,11 +64,16 @@ def init_db():
             room_id TEXT NOT NULL,
             player_name TEXT NOT NULL,
             is_host INTEGER NOT NULL DEFAULT 0,
+            ready INTEGER NOT NULL DEFAULT 0,
             ready_next INTEGER NOT NULL DEFAULT 0,
             joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY(room_id, player_name)
         )
     ''')
+    cursor.execute('PRAGMA table_info(battle_players)')
+    player_columns = [row[1] for row in cursor.fetchall()]
+    if 'ready' not in player_columns:
+        cursor.execute('ALTER TABLE battle_players ADD COLUMN ready INTEGER NOT NULL DEFAULT 0')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS battle_scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -230,7 +235,7 @@ def fetch_battle_room(cursor, room_id):
         return None
 
     cursor.execute(
-        'SELECT player_name AS playerName, is_host AS isHost, ready_next AS readyNext '
+        'SELECT player_name AS playerName, is_host AS isHost, ready AS ready, ready_next AS readyNext '
         'FROM battle_players WHERE room_id = ? ORDER BY is_host DESC, joined_at ASC',
         (room_id,)
     )
@@ -247,6 +252,7 @@ def fetch_battle_room(cursor, room_id):
     for player in players:
         score = score_map.get(player['playerName'])
         player['isHost'] = bool(player['isHost'])
+        player['ready'] = bool(player['ready'])
         player['readyNext'] = bool(player['readyNext'])
         player['finished'] = score is not None
         player['score'] = score['score'] if score else None
@@ -254,6 +260,7 @@ def fetch_battle_room(cursor, room_id):
         player['difficulty'] = score['difficulty'] if score else room['difficulty']
 
     all_finished = len(players) >= 2 and all(player['finished'] for player in players)
+    all_ready = len(players) >= 2 and all(player['ready'] for player in players)
     return {
         'roomId': room['room_id'],
         'hostName': room['host_name'],
@@ -261,6 +268,7 @@ def fetch_battle_room(cursor, room_id):
         'status': room['status'],
         'roundNo': room['round_no'],
         'allFinished': all_finished,
+        'allReady': all_ready,
         'players': players[:2]
     }
 
@@ -337,7 +345,7 @@ def join_battle_room(room_id):
 
         if not exists:
             cursor.execute(
-                'INSERT INTO battle_players (room_id, player_name, is_host) VALUES (?, ?, 0)',
+                'INSERT INTO battle_players (room_id, player_name, is_host, ready, ready_next) VALUES (?, ?, 0, 0, 0)',
                 (room_id, player_name)
             )
         conn.commit()
@@ -349,6 +357,64 @@ def join_battle_room(room_id):
 
     except Exception as e:
         print(f'[错误] 加入对战房间失败: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/battle/rooms/<room_id>/ready', methods=['POST'])
+def ready_battle_room(room_id):
+    """玩家准备，双方都准备后自动进入 playing。"""
+    try:
+        data = request.get_json() or {}
+        room_id = normalize_room_id(room_id)
+        player_name = normalize_player_name(data.get('playerName'))
+
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT status FROM battle_rooms WHERE room_id = ?', (room_id,))
+        room = cursor.fetchone()
+        if not room:
+            conn.close()
+            return jsonify({'error': '房间不存在'}), 404
+        if room['status'] != 'waiting':
+            conn.close()
+            return jsonify({'error': '当前房间不处于可准备状态'}), 409
+
+        cursor.execute(
+            'SELECT 1 FROM battle_players WHERE room_id = ? AND player_name = ?',
+            (room_id, player_name)
+        )
+        if cursor.fetchone() is None:
+            conn.close()
+            return jsonify({'error': '玩家不在房间内'}), 404
+
+        cursor.execute(
+            'UPDATE battle_players SET ready = 1 WHERE room_id = ? AND player_name = ?',
+            (room_id, player_name)
+        )
+        cursor.execute('SELECT COUNT(*) FROM battle_players WHERE room_id = ?', (room_id,))
+        player_count = cursor.fetchone()[0]
+        cursor.execute(
+            'SELECT COUNT(*) FROM battle_players WHERE room_id = ? AND ready = 1',
+            (room_id,)
+        )
+        ready_count = cursor.fetchone()[0]
+
+        if player_count >= 2 and ready_count >= 2:
+            cursor.execute(
+                "UPDATE battle_rooms SET status = 'playing', updated_at = CURRENT_TIMESTAMP WHERE room_id = ?",
+                (room_id,)
+            )
+            cursor.execute('UPDATE battle_players SET ready_next = 0 WHERE room_id = ?', (room_id,))
+
+        conn.commit()
+        battle_room = fetch_battle_room(cursor, room_id)
+        conn.close()
+
+        print(f'[房间准备] {room_id} - {player_name}')
+        return jsonify(battle_room), 200
+
+    except Exception as e:
+        print(f'[错误] 房间准备失败: {e}')
         return jsonify({'error': str(e)}), 500
 
 
@@ -375,6 +441,13 @@ def start_battle_room(room_id):
         if cursor.fetchone()[0] < 2:
             conn.close()
             return jsonify({'error': '需要两名玩家就绪后才能开始'}), 409
+        cursor.execute(
+            'SELECT COUNT(*) FROM battle_players WHERE room_id = ? AND ready = 1',
+            (room_id,)
+        )
+        if cursor.fetchone()[0] < 2:
+            conn.close()
+            return jsonify({'error': '需要两名玩家都准备后才能开始'}), 409
 
         cursor.execute(
             "UPDATE battle_rooms SET status = 'playing', updated_at = CURRENT_TIMESTAMP WHERE room_id = ?",
@@ -454,7 +527,7 @@ def submit_battle_score(room_id):
 
 @app.route('/api/battle/rooms/<room_id>/again', methods=['POST'])
 def ready_battle_again(room_id):
-    """玩家准备再来一局，两人都准备后房间回到 waiting，等待房主开始。"""
+    """玩家准备再来一局，两人都同意后直接开始下一局。"""
     try:
         data = request.get_json() or {}
         room_id = normalize_room_id(room_id)
@@ -481,11 +554,11 @@ def ready_battle_again(room_id):
         ready_count = cursor.fetchone()[0]
         if player_count >= 2 and ready_count >= 2:
             cursor.execute(
-                "UPDATE battle_rooms SET status = 'waiting', round_no = round_no + 1, "
+                "UPDATE battle_rooms SET status = 'playing', round_no = round_no + 1, "
                 "updated_at = CURRENT_TIMESTAMP WHERE room_id = ?",
                 (room_id,)
             )
-            cursor.execute('UPDATE battle_players SET ready_next = 0 WHERE room_id = ?', (room_id,))
+            cursor.execute('UPDATE battle_players SET ready = 1, ready_next = 0 WHERE room_id = ?', (room_id,))
         conn.commit()
         battle_room = fetch_battle_room(cursor, room_id)
         conn.close()
@@ -527,7 +600,7 @@ def leave_battle_room(room_id):
                 )
                 new_host = cursor.fetchone()['player_name']
                 cursor.execute(
-                    "UPDATE battle_rooms SET host_name = ?, status = 'waiting' WHERE room_id = ?",
+                    "UPDATE battle_rooms SET host_name = ?, status = 'waiting', updated_at = CURRENT_TIMESTAMP WHERE room_id = ?",
                     (new_host, room_id)
                 )
                 cursor.execute('UPDATE battle_players SET is_host = 0 WHERE room_id = ?', (room_id,))
@@ -535,6 +608,7 @@ def leave_battle_room(room_id):
                     'UPDATE battle_players SET is_host = 1 WHERE room_id = ? AND player_name = ?',
                     (room_id, new_host)
                 )
+            cursor.execute('UPDATE battle_players SET ready = 0, ready_next = 0 WHERE room_id = ?', (room_id,))
             room = fetch_battle_room(cursor, room_id)
         conn.commit()
         conn.close()

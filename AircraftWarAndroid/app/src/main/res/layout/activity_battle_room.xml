@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="选择服务器 IP 后创建或加入房间"
+            android:text="输入服务器地址后创建或加入房间"
             android:textColor="#CCCCCC"
             android:textSize="15sp"
             android:layout_marginBottom="16dp" />
@@ -36,7 +36,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="服务器：http://10.0.2.2:5000"
+            android:text="服务器: http://10.0.2.2:5000"
             android:textColor="#88FFFFFF"
             android:textSize="13sp"
             android:layout_marginBottom="16dp" />
@@ -120,10 +120,9 @@
                 android:layout_height="50dp"
                 android:layout_marginBottom="10dp"
                 android:background="#16213e"
-                android:hint="Player"
+                android:hint="输入你的名字"
                 android:paddingStart="14dp"
                 android:paddingEnd="14dp"
-                android:text="Player"
                 android:textColor="#FFFFFF"
                 android:textColorHint="#888888" />
 
@@ -153,7 +152,7 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     android:background="#e94560"
-                    android:text="开房间"
+                    android:text="创建房间"
                     android:textColor="#FFFFFF"
                     android:textSize="16sp" />
 
@@ -183,7 +182,7 @@
                 android:layout_height="wrap_content"
                 android:background="#16213e"
                 android:padding="18dp"
-                android:text="玩家1：等待加入"
+                android:text="玩家1: 等待加入..."
                 android:textColor="#FFFFFF"
                 android:textSize="17sp"
                 android:layout_marginBottom="14dp" />
@@ -194,7 +193,7 @@
                 android:layout_height="wrap_content"
                 android:background="#16213e"
                 android:padding="18dp"
-                android:text="玩家2：等待加入"
+                android:text="玩家2: 等待加入..."
                 android:textColor="#FFFFFF"
                 android:textSize="17sp"
                 android:layout_marginBottom="20dp" />
@@ -211,12 +210,12 @@
                 android:layout_marginBottom="20dp" />
 
             <Button
-                android:id="@+id/btn_start_room"
+                android:id="@+id/btn_ready_room"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginBottom="12dp"
-                android:background="#e94560"
-                android:text="开始游戏（房主）"
+                android:background="#4CAF50"
+                android:text="准备"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:visibility="gone" />

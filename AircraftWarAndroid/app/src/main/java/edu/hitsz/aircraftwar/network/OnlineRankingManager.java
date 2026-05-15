@@ -64,11 +64,10 @@ public class OnlineRankingManager {
      * @param host 服务器IP地址
      * @param port 服务器端口
      */
-    public static void setServerAddress(String host, int port) {
+    public static synchronized void setServerAddress(String host, int port) {
         serverHost = host;
         serverPort = port;
-        // 重置实例以使用新地址
-        instance = null;
+        // 不再重置实例，避免竞态条件导致请求使用错误地址
     }
 
     private String getBaseUrl() {
